@@ -1,38 +1,39 @@
+extern crate docopt;
+extern crate rustc_serialize;
+
+use docopt::Docopt;
 mod ipster;
 
-use std::io::prelude::*;
-use std::io::Result;
-use std::fs::File;
-use ipster::*;
+const USAGE: &'static str = "
+Usage: ipster [-p] <orig> <change> (-o <outfile>)
+       ipster --help
 
-fn read_file(filename: &str) -> Result<Vec<u8>> {
-    let mut f = try!(File::open(filename));
-    let mut buffer = Vec::new();
+Options:
+    -o, --outfile  Write output to this file
+    -p, --patch    Apply patch instead of diffing files.
+    -h, --help     Show this message.
+";
 
-    try!(f.read_to_end(&mut buffer));
-
-    Ok(buffer)
+#[derive(RustcDecodable)]
+struct Args {
+    arg_orig: String,
+    arg_change: String,
+    arg_outfile: String,
+    flag_patch: bool,
 }
 
 fn main () {
-    match read_file("test.bin") {
-        Ok(buffer) => Some(buffer),
-        Err(e) => { println!("{}", e); None },
-    }
-    .map(|orig| {
-        match read_file("test-edited.bin") {
-            Ok(edited) => {
-                println!("{:?}", {
-                    let ips = Ips::new(orig);
-                    let patches = ips.diff(edited);
-                    let bs: Vec<u8> = patches.iter().flat_map(|p| p.bytes()).collect();
-                    let mut x: Vec<u8> = "PATCH".bytes().collect();
-                    x.extend(bs);
-                    x.extend("EOF".bytes().collect::<Vec<_>>());
-                    x
-                });
-            },
-            Err(e) => println!("{:?}", e),
-        };
-    });
+    let argv = std::env::args();
+    let args: Args = Docopt::new(USAGE)
+        .and_then(|d| d.argv(argv.into_iter()).decode())
+        .unwrap_or_else(|e| e.exit());
+
+    let some_bytes = {
+        if args.flag_patch {
+            ipster::files::patch_files(&args.arg_orig, &args.arg_change)
+        } else {
+            ipster::files::diff_files(&args.arg_orig, &args.arg_change)
+        }
+    };
+    some_bytes.map(|bytes| ipster::files::write_file(&args.arg_outfile, &bytes));
 }
