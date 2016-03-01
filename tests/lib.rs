@@ -1,5 +1,4 @@
 extern crate ipster;
-use ipster;
 
 #[test]
 fn it_works() {
@@ -9,5 +8,5 @@ fn it_works() {
 fn symmetry() {
     let orig = b"foobar";
     let change = b"fOObar";
-    ipster::patch(ipster::diff(orig.iter().collect(), change.iter().collect()));
+    ipster::patch(ipster::Ips::new(orig).diff(change.iter().collect()));
 }

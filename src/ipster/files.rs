@@ -20,22 +20,9 @@ fn log<T: Display>(e: T) -> () {
 }
 
 pub fn diff_files(orig_file: &str, change_file: &str) -> Option<Vec<u8>> {
-    match read_file(orig_file) {
-        Ok(buffer) => Some(buffer),
-        Err(e) => { log(e); None },
-    }
-    .and_then(|orig| {
-        match read_file(change_file) {
-            Ok(change) => {
-                Some(diff(orig, change))
-            },
-            Err(e) => { println_stderr!("{:?}", e); None },
-        }
+    with_files(orig_file, change_file, |orig, change| {
+        Some(diff(orig, change))
     })
-
-    // with_files(orig_file, change_file, |orig, change| {
-    //     bytes = Some(diff(orig, change));
-    // });
 }
 
 pub fn diff(orig: Vec<u8>, change: Vec<u8>) -> Vec<u8> {
@@ -45,38 +32,33 @@ pub fn diff(orig: Vec<u8>, change: Vec<u8>) -> Vec<u8> {
 }
 
 pub fn patch_files(orig_file: &str, change_file: &str) -> Option<Vec<u8>> {
+    with_files(orig_file, change_file, |orig, change| {
+        patch(orig, change)
+    })
+}
+
+pub fn patch(orig: Vec<u8>, change: Vec<u8>) -> Option<Vec<u8>> {
+    let ips = Ips::new(orig);
+    ips.unserialize_patches(change)
+        .map(|patches| ips.patch(patches))
+}
+
+fn with_files<F, T>(orig_file: &str, change_file: &str, mut callback: F) -> Option<T>
+  where F: FnMut(Vec<u8>, Vec<u8>) -> Option<T> {
+
     match read_file(orig_file) {
         Ok(buffer) => Some(buffer),
-        _ => None, //{ println_stderr!("{}", e); None },
+        Err(e) => { log(e); None },
     }
     .and_then(|orig| {
         match read_file(change_file) {
             Ok(change) => {
-                None // nop
+                callback(orig, change)
             },
             Err(e) => { println_stderr!("{:?}", e); None },
         }
     })
 }
-
-pub fn patch(orig: Vec<u8>, change: Vec<u8>) -> Vec<u8> {
-    let ips = Ips::new(orig);
-    let patches = ips.unserialize_patches(change);
-    ips.patch(patches)
-}
-
-/* fn with_files(orig_file: &str, change_file: &str, callback: (FnMut(Vec<u8>, Vec<u8>) -> ())) -> Result<()> {
-    match read_file(orig_file) {
-        Ok(buffer) => Some(buffer),
-        Err(e) => { println_stderr!("{}", e); None },
-    }
-    .map(|orig| {
-        match read_file(change_file) {
-            Ok(change) => { callback(orig, change) },
-            Err(e) => { println_stderr!("{:?}", e); },
-        };
-    });
-} */
 
 pub fn read_file(filename: &str) -> Result<Vec<u8>> {
     let mut f = try!(File::open(filename));
@@ -93,4 +75,3 @@ pub fn write_file(filename: &str, data: &[u8]) -> Result<()> {
 
     Ok(())
 }
-

@@ -5,13 +5,12 @@ use docopt::Docopt;
 mod ipster;
 
 const USAGE: &'static str = "
-Usage: ipster [-p] <orig> <change> (-o <outfile>)
+Usage: ipster [-p] <orig> <change> <outfile>
        ipster --help
 
 Options:
-    -o, --outfile  Write output to this file
-    -p, --patch    Apply patch instead of diffing files.
-    -h, --help     Show this message.
+    -p, --patch  Apply patch instead of diffing files.
+    -h, --help   Show this message.
 ";
 
 #[derive(RustcDecodable)]
