@@ -7,7 +7,7 @@ pub struct Ips {
 
 macro_rules! copy {
     ($a:expr, $v:expr) => {
-        for (to, from) in $a.iter_mut().zip(&$v as &Vec<u8>) {
+        for (to, from) in $a.iter_mut().zip($v) {
             *to = *from;
         }
     }
@@ -44,6 +44,8 @@ impl Ips {
     pub fn patch(&self, change: Vec<Patch>) -> Vec<u8> {
         let output = Vec::new();
         for patch in change {
+            // TODO merge self and patch
+            println!("{:?}", &patch);
         }
         output
     }
@@ -51,38 +53,52 @@ impl Ips {
     pub fn unserialize_patches(&self, binary: Vec<u8>) -> Option<Vec<Patch>> {
         let mut patches: Vec<Patch> = Vec::new();
 
-        let header: Vec<u8> = binary.iter().take(5).cloned().collect();
+        let slice = &binary;
+        let (header, mut slice) = slice.split_at(5);
 
-        if &header != b"PATCH" {
+        if header != b"PATCH" {
             return None;
         }
 
-        let mut rest: Vec<u8> = binary.iter().skip(5).cloned().collect();
-
         loop {
-            if rest.len() <= 5 {
+            // TODO support RLE'd patches
+            let (addr_slice, rest) = slice.split_at(3);
+            let (len_slice, rest) = rest.split_at(2);
+
+            if (! addr_slice.is_empty()) && len_slice.len() < 2 {
+                // Malformed data
+                return None;
+            }
+
+            let mut addr_array = [0; 3];
+            copy!(addr_array, addr_slice);
+            let addr = Patch::unserialize_addr_array(addr_array);
+
+            let mut len_array = [0; 2];
+            copy!(len_array, len_slice);
+            let len = Patch::unserialize_len(len_array);
+
+            let (data, rest) = rest.split_at(len);
+
+            if data.len() < len {
+                // Malformed data
+                return None;
+            }
+
+            let patch = Patch {
+                addr: addr,
+                data: data.to_vec()
+            };
+
+            patches.push(patch);
+
+            slice = rest;
+
+            let possible_eof: Vec<u8> = rest.iter().take(3).cloned().collect();
+            if &possible_eof == b"EOF" {
+                // We are done here
                 break;
             }
-            println!("{:?} bytes", rest.len());
-
-            let mut addr_be = [0; 3];
-            copy!(addr_be, rest.iter().take(3).cloned().collect::<Vec<u8>>());
-            let addr = Patch::unserialize_addr_array(addr_be);
-            rest = rest.iter().skip(3).cloned().collect();
-            println!("addr: {:?}", addr);
-
-            let mut len_be: [u8; 2] = [0; 2];
-            copy!(len_be, rest.iter().take(2).cloned().collect());
-            let len = Patch::unserialize_len(len_be);
-            rest = rest.iter().skip(2).cloned().collect();
-            println!("len: {:?}", len);
-
-            let data = rest.iter().take(len).cloned().collect();
-            patches.push(Patch {
-                addr: addr,
-                data: data
-            });
-            rest = rest.iter().skip(len).cloned().collect();
         }
 
         Some(patches)
