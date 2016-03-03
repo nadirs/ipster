@@ -1,5 +1,8 @@
 pub mod files;
 
+use std::cmp;
+use std::io::Write;
+
 #[derive(Debug)]
 pub struct Ips {
     buffer: Vec<u8>
@@ -42,11 +45,17 @@ impl Ips {
     }
 
     pub fn patch(&self, change: Vec<Patch>) -> Vec<u8> {
-        let output = Vec::new();
+        let total_size = cmp::max(self.buffer.len(), change.iter().max_by_key(|x| x.addr as usize + x.data.len()).unwrap().addr as usize);
+        let mut output = Vec::with_capacity(total_size);
+        output.extend(&self.buffer);
+
+        println!("before: {:?}", output);
         for patch in change {
-            // TODO merge self and patch
-            println!("{:?}", &patch);
+            println!("{:?}", patch);
+            let (_, mut skipped) = output.split_at_mut(patch.addr as usize);
+            skipped.write(&patch.data);
         }
+        println!("after: {:?}", output);
         output
     }
 
@@ -155,4 +164,6 @@ impl Patch {
     pub fn serialize_len(&self) -> Vec<u8> {
         vec![(self.data.len() >> 8) as u8, self.data.len() as u8]
     }
+
+    //pub fn apply_to(&self, &[mut u8]
 }
