@@ -17,19 +17,19 @@ macro_rules! copy {
 }
 
 impl Ips {
-    pub fn new(buffer: Vec<u8>) -> Self {
+    pub fn new(buffer: &Vec<u8>) -> Self {
         Ips {
-            buffer: buffer
+            buffer: buffer.clone()
         }
     }
 
-    pub fn diff(&self, change: Vec<u8>) -> Vec<Patch> {
+    pub fn diff(&self, change: &Vec<u8>) -> Vec<Patch> {
         let mut pairs = (0..).zip(self.buffer.iter().zip(change));
 
         let mut patches: Vec<Patch> = vec![];
         let mut index = 0;
         let mut data = vec![];
-        while let Some((offset, (&before, after))) = pairs.next() {
+        while let Some((offset, (&before, &after))) = pairs.next() {
             if before != after {
                 if data.is_empty() {
                     index = offset;
@@ -44,7 +44,7 @@ impl Ips {
         patches
     }
 
-    pub fn patch(&self, change: Vec<Patch>) -> Vec<u8> {
+    pub fn patch(&self, change: &Vec<Patch>) -> Vec<u8> {
         let total_size = cmp::max(self.buffer.len(), change.iter().max_by_key(|x| x.addr as usize + x.data.len()).unwrap().addr as usize);
         let mut output = Vec::with_capacity(total_size);
         output.extend(&self.buffer);
@@ -122,7 +122,7 @@ impl Ips {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Patch {
     addr: u32,
     data: Vec<u8>
