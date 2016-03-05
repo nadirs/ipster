@@ -8,14 +8,6 @@ pub struct Ips {
     buffer: Vec<u8>
 }
 
-macro_rules! copy {
-    ($a:expr, $v:expr) => {
-        for (to, from) in $a.iter_mut().zip($v) {
-            *to = *from;
-        }
-    }
-}
-
 impl Ips {
     pub fn new(buffer: &Vec<u8>) -> Self {
         Ips {
@@ -89,11 +81,11 @@ pub fn unserialize_patches(binary: Vec<u8>) -> Option<Vec<Patch>> {
         }
 
         let mut addr_array = [0; 3];
-        copy!(addr_array, addr_slice);
+        addr_array.clone_from_slice(addr_slice);
         let addr = Patch::unserialize_addr_array(addr_array);
 
         let mut len_array = [0; 2];
-        copy!(len_array, len_slice);
+        len_array.clone_from_slice(len_slice);
         let len = Patch::unserialize_len(len_array);
 
         let (data, rest) = rest.split_at(len);
