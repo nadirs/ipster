@@ -3,7 +3,8 @@ use std::io::Result;
 use std::fs::File;
 use std::fmt::Display;
 
-use ipster::Ips;
+use ipster;
+use ipster::{Ips, Patch};
 
 // from http://stackoverflow.com/a/27590832/1376657
 macro_rules! println_stderr(
@@ -39,8 +40,18 @@ pub fn patch_files(orig_file: &str, change_file: &str) -> Option<Vec<u8>> {
 
 pub fn patch(orig: Vec<u8>, change: Vec<u8>) -> Option<Vec<u8>> {
     let ips = Ips::new(&orig);
-    ips.unserialize_patches(change)
+    ipster::unserialize_patches(change)
         .map(|patches| ips.patch(&patches))
+}
+
+pub fn with_file<F, T>(filename: &str, mut callback: F) -> Option<T>
+  where F: FnMut(Vec<u8>) -> Option<T> {
+
+    match read_file(filename) {
+        Ok(buffer) => Some(buffer),
+        Err(e) => { log(e); None },
+    }
+    .and_then(callback)
 }
 
 fn with_files<F, T>(orig_file: &str, change_file: &str, mut callback: F) -> Option<T>

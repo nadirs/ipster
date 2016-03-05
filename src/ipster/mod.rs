@@ -59,60 +59,6 @@ impl Ips {
         output
     }
 
-    pub fn unserialize_patches(&self, binary: Vec<u8>) -> Option<Vec<Patch>> {
-        let mut patches: Vec<Patch> = Vec::new();
-
-        let slice = &binary;
-        let (header, mut slice) = slice.split_at(5);
-
-        if header != b"PATCH" {
-            return None;
-        }
-
-        loop {
-            // TODO support RLE'd patches
-            let (addr_slice, rest) = slice.split_at(3);
-            let (len_slice, rest) = rest.split_at(2);
-
-            if (! addr_slice.is_empty()) && len_slice.len() < 2 {
-                // Malformed data
-                return None;
-            }
-
-            let mut addr_array = [0; 3];
-            copy!(addr_array, addr_slice);
-            let addr = Patch::unserialize_addr_array(addr_array);
-
-            let mut len_array = [0; 2];
-            copy!(len_array, len_slice);
-            let len = Patch::unserialize_len(len_array);
-
-            let (data, rest) = rest.split_at(len);
-
-            if data.len() < len {
-                // Malformed data
-                return None;
-            }
-
-            let patch = Patch {
-                addr: addr,
-                data: data.to_vec()
-            };
-
-            patches.push(patch);
-
-            slice = rest;
-
-            let possible_eof: Vec<u8> = rest.iter().take(3).cloned().collect();
-            if &possible_eof == b"EOF" {
-                // We are done here
-                break;
-            }
-        }
-
-        Some(patches)
-    }
-
     pub fn serialize_patches(&self, patches: Vec<Patch>) -> Vec<u8> {
         let patch_contents: Vec<u8> = patches.iter().flat_map(|p| p.bytes()).collect();
         let mut binary: Vec<u8> = "PATCH".bytes().collect();
@@ -121,6 +67,62 @@ impl Ips {
         binary
     }
 }
+
+pub fn unserialize_patches(binary: Vec<u8>) -> Option<Vec<Patch>> {
+    let mut patches: Vec<Patch> = Vec::new();
+
+    let slice = &binary;
+    let (header, mut slice) = slice.split_at(5);
+
+    if header != b"PATCH" {
+        return None;
+    }
+
+    loop {
+        // TODO support RLE'd patches
+        let (addr_slice, rest) = slice.split_at(3);
+        let (len_slice, rest) = rest.split_at(2);
+
+        if (! addr_slice.is_empty()) && len_slice.len() < 2 {
+            // Malformed data
+            return None;
+        }
+
+        let mut addr_array = [0; 3];
+        copy!(addr_array, addr_slice);
+        let addr = Patch::unserialize_addr_array(addr_array);
+
+        let mut len_array = [0; 2];
+        copy!(len_array, len_slice);
+        let len = Patch::unserialize_len(len_array);
+
+        let (data, rest) = rest.split_at(len);
+
+        if data.len() < len {
+            // Malformed data
+            return None;
+        }
+
+        let patch = Patch {
+            addr: addr,
+            data: data.to_vec()
+        };
+
+        patches.push(patch);
+
+        slice = rest;
+
+        let possible_eof: Vec<u8> = rest.iter().take(3).cloned().collect();
+        if &possible_eof == b"EOF" {
+            // We are done here
+            break;
+        }
+    }
+
+    Some(patches)
+}
+
+
 
 #[derive(Debug, PartialEq)]
 pub struct Patch {
