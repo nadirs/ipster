@@ -29,7 +29,7 @@ pub fn diff_files(orig_file: &str, change_file: &str) -> Option<Vec<u8>> {
 pub fn diff(orig: Vec<u8>, change: Vec<u8>) -> Vec<u8> {
     let ips = Ips::new(&orig);
     let patches = ips.diff(&change);
-    ips.serialize_patches(patches)
+    ipster::serialize_patches(patches)
 }
 
 pub fn patch_files(orig_file: &str, change_file: &str) -> Option<Vec<u8>> {

@@ -51,13 +51,14 @@ impl Ips {
         output
     }
 
-    pub fn serialize_patches(&self, patches: Vec<Patch>) -> Vec<u8> {
-        let patch_contents: Vec<u8> = patches.iter().flat_map(|p| p.bytes()).collect();
-        let mut binary: Vec<u8> = "PATCH".bytes().collect();
-        binary.extend(patch_contents);
-        binary.extend("EOF".bytes().collect::<Vec<_>>());
-        binary
-    }
+}
+
+pub fn serialize_patches(patches: Vec<Patch>) -> Vec<u8> {
+    let patch_contents: Vec<u8> = patches.iter().flat_map(|p| p.bytes()).collect();
+    let mut binary: Vec<u8> = "PATCH".bytes().collect();
+    binary.extend(patch_contents);
+    binary.extend("EOF".bytes().collect::<Vec<_>>());
+    binary
 }
 
 pub fn unserialize_patches(binary: Vec<u8>) -> Option<Vec<Patch>> {
