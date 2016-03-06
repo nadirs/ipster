@@ -1,2 +1,2 @@
 mod ipster;
-pub use self::ipster::{Ips, Patch};
+pub use self::ipster::*;

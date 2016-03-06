@@ -4,7 +4,7 @@ use std::fs::File;
 use std::fmt::Display;
 
 use ipster;
-use ipster::{Ips, Patch};
+use ipster::Ips;
 
 // from http://stackoverflow.com/a/27590832/1376657
 macro_rules! println_stderr(
@@ -44,7 +44,7 @@ pub fn patch(orig: Vec<u8>, change: Vec<u8>) -> Option<Vec<u8>> {
         .map(|patches| ips.patch(&patches))
 }
 
-pub fn with_file<F, T>(filename: &str, mut callback: F) -> Option<T>
+pub fn with_file<F, T>(filename: &str, callback: F) -> Option<T>
   where F: FnMut(Vec<u8>) -> Option<T> {
 
     match read_file(filename) {

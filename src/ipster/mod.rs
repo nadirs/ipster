@@ -3,6 +3,8 @@ pub mod files;
 use std::cmp;
 use std::io::Write;
 
+const MAX_PATCH_LEN: usize = 0xFFFF;
+
 #[derive(Debug)]
 pub struct Ips {
     buffer: Vec<u8>
@@ -16,11 +18,13 @@ impl Ips {
     }
 
     pub fn diff(&self, change: &Vec<u8>) -> Vec<Patch> {
-        let mut pairs = (0..).zip(self.buffer.iter().zip(change));
+        let (change_within, additional) = change.split_at(self.buffer.len());
+        let mut pairs = (0..).zip(self.buffer.iter().zip(change_within));
 
         let mut patches: Vec<Patch> = vec![];
         let mut index = 0;
         let mut data = vec![];
+
         while let Some((offset, (&before, &after))) = pairs.next() {
             if before != after {
                 if data.is_empty() {
@@ -33,25 +37,44 @@ impl Ips {
                 data = vec![];
             }
         };
+
+        for chunk in additional.chunks(MAX_PATCH_LEN) {
+            let patch = Patch::new(self.buffer.len() as u32, chunk.to_vec());
+            patches.push(patch);
+        }
+
         patches
     }
 
     pub fn patch(&self, change: &Vec<Patch>) -> Vec<u8> {
-        let total_size = cmp::max(self.buffer.len(), change.iter().max_by_key(|x| x.addr as usize + x.data.len()).unwrap().addr as usize);
+        let total_size = cmp::max(self.buffer.len(), patch_max_len(&change).unwrap());
+        println!("{:?}", total_size);
+
         let mut output = Vec::with_capacity(total_size);
-        output.extend(&self.buffer);
+        let _ = output.write(&self.buffer);
 
         println!("before: {:?}", output);
         for patch in change {
-            println!("{:?}", patch);
-            let (_, mut skipped) = output.split_at_mut(patch.addr as usize);
-            skipped.write(&patch.data);
+            {
+                let (_, mut skipped) = output.split_at_mut(patch.addr as usize);
+                skipped.write(&patch.data)
+            }.map(|written_len| {
+                let (_, unwritten_data) = patch.data.split_at(written_len);
+                for &b in unwritten_data {
+                    output.push(b);
+                }
+            });
         }
         println!("after: {:?}", output);
         output
     }
 
 }
+
+pub fn patch_max_len(patch: &[Patch]) -> Option<usize> {
+    patch.iter().map(|x| x.addr as usize + x.data.len()).max()
+}
+
 
 pub fn serialize_patches(patches: Vec<Patch>) -> Vec<u8> {
     let patch_contents: Vec<u8> = patches.iter().flat_map(|p| p.bytes()).collect();
@@ -144,10 +167,6 @@ impl Patch {
         ((addr[0] as u32) << 16) | ((addr[1] as u32) << 8) | addr[2] as u32
     }
 
-    pub fn unserialize_addr_bytes(a3: u8, a2: u8, a1: u8) -> u32 {
-        ((a3 as u32) << 16) | ((a2 as u32) << 8) | a1 as u32
-    }
-
     pub fn serialize_addr(&self) -> Vec<u8> {
         vec![(self.addr >> 16) as u8, (self.addr >> 8) as u8, self.addr as u8]
     }
@@ -159,6 +178,4 @@ impl Patch {
     pub fn serialize_len(&self) -> Vec<u8> {
         vec![(self.data.len() >> 8) as u8, self.data.len() as u8]
     }
-
-    //pub fn apply_to(&self, &[mut u8]
 }
