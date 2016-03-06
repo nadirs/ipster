@@ -51,7 +51,7 @@ impl Ips {
         println!("{:?}", total_size);
 
         let mut output = Vec::with_capacity(total_size);
-        let _ = output.write(&self.buffer);
+        output.write(&self.buffer);
 
         println!("before: {:?}", output);
         for patch in change {
