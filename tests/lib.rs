@@ -48,6 +48,21 @@ fn patch_extended() {
 }
 
 #[test]
+fn unserialize_rle_patch() {
+    let mut patch_binary = b"PATCH".to_vec();
+    patch_binary.extend(vec![0, 0, 1, 0, 0, 0, 2, b'O']);
+    patch_binary.extend(vec![0, 0, 6, 0, 3, b'B', b'A', b'Z']);
+    patch_binary.extend(b"EOF");
+
+    let patch = vec![
+        Patch::new(1, vec![b'O', b'O']),
+        Patch::new(6, vec![b'B', b'A', b'Z'])
+    ];
+
+    assert_eq!(patch, unserialize_patches(patch_binary).unwrap());
+}
+
+#[test]
 fn symmetry_between_diff() {
     let orig = b"foobar".to_vec();
     let change = b"fOObar".to_vec();
