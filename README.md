@@ -10,3 +10,4 @@ IPS ([International Patching Format](http://www.zerosoft.zophar.net/ips.php)) pa
  - [ ] handle patch chunks bigger than 2^16 bytes(i.e. split them in smaller chunks of max 0xFFFF bytes)
  - [X] ability to apply RLE patches
  - [ ] ability to encode diff using RLE
+ - [ ] add tests
