@@ -83,3 +83,16 @@ fn symmetry_between_diff_and_patch_extended() {
 
     assert_eq!(change, ips.patch(&diff));
 }
+
+#[test]
+fn no_patch_at_0x454f46() {
+    let orig = vec![1; 0x455500];
+    let mut change = orig.clone();
+    change[0x454f46] = 5;
+    let change_vec = change.to_vec();
+
+    let ips = Ips::new(&orig);
+    let diff = ips.diff(&change);
+
+    assert_eq!(diff, vec![Patch::new(0x454f45, vec![0, 5])]);
+}
