@@ -138,8 +138,8 @@ pub fn unserialize_patches(binary: Vec<u8>) -> Option<Vec<Patch>> {
 
         slice = rest;
 
-        let possible_eof: Vec<u8> = rest.iter().take(3).cloned().collect();
-        if &possible_eof == b"EOF" {
+        let (possible_eof, _) = rest.split_at(3);
+        if possible_eof == b"EOF" {
             // We are done here
             break;
         }
