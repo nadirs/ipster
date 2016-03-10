@@ -1,6 +1,6 @@
 # IPSter
 
-IPS ([International Patching Format](http://www.zerosoft.zophar.net/ips.php)) patcher (and differ)
+IPS ([International Patching System](http://www.zerosoft.zophar.net/ips.php)) patcher (and differ)
 
 ## Checklist
  - [X] apply a patch file to an original file (output to a third file)
