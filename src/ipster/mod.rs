@@ -136,13 +136,18 @@ pub fn unserialize_patches(binary: Vec<u8>) -> Option<Vec<Patch>> {
 
         patches.push(patch);
 
-        slice = rest;
+        if rest.len() < 3 {
+            // Malformed data
+            return None;
+        }
 
         let (possible_eof, _) = rest.split_at(3);
         if possible_eof == b"EOF" {
             // We are done here
             break;
         }
+
+        slice = rest;
     }
 
     Some(patches)
