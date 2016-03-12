@@ -126,7 +126,7 @@ pub fn unserialize_patches(binary: Vec<u8>) -> Option<Vec<Patch>> {
             let (rle_val_slice, rest) = rest.split_at(1);
             let rle_val = rle_val_slice[0];
 
-            let patch = Patch::new(addr, from_rle(rle_len, rle_val));
+            let patch = Patch::new(addr, rle_decompress(rle_len, rle_val));
             (patch, rest)
         } else {
             let (data, rest) = rest.split_at(len);
@@ -153,11 +153,11 @@ pub fn unserialize_patches(binary: Vec<u8>) -> Option<Vec<Patch>> {
     Some(patches)
 }
 
-pub fn into_rle(data: Vec<u8>) -> (usize, u8) {
+pub fn rle_compress(data: Vec<u8>) -> (usize, u8) {
     (data.len(), data[0])
 }
 
-pub fn from_rle(len: usize, val: u8) -> Vec<u8> {
+pub fn rle_decompress(len: usize, val: u8) -> Vec<u8> {
     iter::repeat(val).take(len).collect()
 }
 
