@@ -153,10 +153,6 @@ pub fn unserialize_patches(binary: Vec<u8>) -> Option<Vec<Patch>> {
     Some(patches)
 }
 
-pub fn rle_compress(data: Vec<u8>) -> (usize, u8) {
-    (data.len(), data[0])
-}
-
 pub fn rle_decompress(len: usize, val: u8) -> Vec<u8> {
     iter::repeat(val).take(len).collect()
 }
